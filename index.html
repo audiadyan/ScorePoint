@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Duel Dekils vs Gilang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description"
+        content="Halaman sederhana untuk menampilkan skor sekarang, highlight per game, dan riwayat tanggal pemenang. Data dari JSON." />
+
+    <!-- Contoh data inline (opsional). Hapus atau ganti dengan data asli -->
+    <script>
+        window.MATCHES = [
+            { game: "HackerRank", desc: "Mars Exploration", playedAt: "2025-08-04", winner: 1 },
+            { game: "HackerRank", desc: "Modified Kaprekar Numbers", playedAt: "2025-08-14", winner: 1 }
+        ];
+    </script>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased">
+    <div class="min-h-lvh mx-auto max-w-4xl px-4 py-8 flex flex-col">
+        <!-- Highlight Skor Sekarang (semua game) -->
+        <div class="flex-grow">
+            <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <div class="text-center text-xs font-bold text-slate-600">Skor Total</div>
+
+                <div class="mt-2 flex gap-3 items-center">
+                    <div class="w-full flex flex-col md:flex-row justify-between items-center">
+                        <div class="text-4xl font-black tracking-tight text-slate-600">Dekils</div>
+                        <div class="text-6xl font-black tracking-tight"><span id="total-aku">0</span></div>
+                    </div>
+
+                    <div class="text-4xl font-black tracking-tight"><span class="mx-2 text-slate-400">:</span></div>
+
+                    <div class="w-full flex flex-col md:flex-row justify-between items-center">
+                        <div class="text-6xl font-black tracking-tight"><span id="total-dia">0</span></div>
+                        <div class="order-first md:order-last text-4xl font-black tracking-tight text-slate-600">Gilang
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-xs text-center">
+                    <span class="rounded-full bg-slate-100 px-3 py-1">Terakhir update: <strong
+                            id="last-updated">—</strong></span>
+                </div>
+            </section>
+
+            <!-- Per Game -->
+            <section id="games-container" class="space-y-4"><!-- Kartu game di-inject --></section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
+            © 2025 Duel Board Dekils vs Gilang.
+        </footer>
+    </div>
+
+    <script>
+        // ======================
+        // 🔧 Konfigurasi Pemain
+        // ======================
+        const PLAYER1_NAME = "Dekils";
+        const PLAYER2_NAME = "Gilang";
+
+        async function loadMatches() {
+            if (Array.isArray(window.MATCHES) && window.MATCHES.length) return window.MATCHES;
+            try {
+                const res = await fetch('matches.json', { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length) return data;
+                }
+            } catch (_) { }
+            return [];
+        }
+
+        // ======================
+        // 🧮 Utilitas & Render
+        // ======================
+        function tally(matches) {
+            const t = { Aku: 0, Dia: 0, Seri: 0 };
+            for (const m of matches) {
+                if (m.winner === 1) t.Aku++;
+                else if (m.winner === 2) t.Dia++;
+                else if (m.winner === 0) t.Seri++;
+            }
+            return t;
+        }
+
+        function groupByGame(matches) {
+            const map = new Map();
+            for (const m of matches) {
+                if (!map.has(m.game)) map.set(m.game, []);
+                map.get(m.game).push(m);
+            }
+            // Urutkan tiap game: terbaru dulu
+            for (const arr of map.values()) arr.sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt));
+            return map;
+        }
+
+        // Urutkan daftar game berdasarkan pertandingan TERBARU (global)
+        function sortedEntriesByLatest(map) {
+            return Array.from(map.entries()).sort(([, aArr], [, bArr]) => {
+                const aLatest = aArr[0] ? new Date(aArr[0].playedAt).getTime() : 0;
+                const bLatest = bArr[0] ? new Date(bArr[0].playedAt).getTime() : 0;
+                return bLatest - aLatest; // terbaru di atas
+            });
+        }
+
+        function colorByGame(idx) {
+            const styles = [
+                { bg: 'from-indigo-600 to-cyan-500' },
+                { bg: 'from-rose-600 to-orange-500' },
+                { bg: 'from-emerald-600 to-lime-500' },
+                { bg: 'from-violet-600 to-fuchsia-500' }
+            ];
+            return styles[idx % styles.length];
+        }
+
+        function renderListItem(m) {
+            const chip = m.winner === 1
+                ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                : m.winner === 2
+                    ? 'bg-blue-100 text-blue-800 ring-blue-200'
+                    : 'bg-amber-100 text-amber-800 ring-amber-200';
+            const date = new Date(m.playedAt);
+            const dateStr = isNaN(+date) ? String(m.playedAt) : date.toLocaleDateString();
+            const descHtml = m.desc ? `<div class="mt-1 text-xs text-slate-500">${m.desc}</div>` : '';
+
+            return `
+      <li class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <span>${dateStr}</span>
+                ${descHtml}
+            </div>
+          
+          <span class="inline-flex items-center gap-2 rounded-full ${chip} px-3 py-1 ring-1">
+            ${m.winner == 1 ? PLAYER1_NAME : m.winner == 2 ? PLAYER2_NAME : 'Seri'}
+          </span>
+        </div>
+        
+      </li>
+    `;
+        }
+
+        function renderGameCard(gameName, matches, idx) {
+            const col = colorByGame(idx);
+            const t = tally(matches);
+            const wrap = document.createElement('section');
+            wrap.className = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden';
+
+            // Tiga item terakhir (terbaru dulu)
+            const visible = matches.slice(0, 3);
+            const hidden = matches.slice(3);
+
+            wrap.innerHTML = `
+        <div class="bg-gradient-to-r ${col.bg} p-5 text-white">
+            <div class="text-center tracking-wider opacity-90">${gameName}</div>
+
+      <div class="flex gap-3 items-center">
+        <div class="w-full flex justify-between items-center">
+            <div class="text-2xl font-black tracking-tight">Dekils</div>
+            <div class="text-3xl font-black tracking-tight">${t.Aku}</div>
+        </div>
+
+        <div class="text-3xl font-black tracking-tight"><span class="mx-2 text-slate-200">:</span></div>
+
+        <div class="w-full flex justify-between items-center">
+            <div class="text-3xl font-black tracking-tight">${t.Dia}</div>
+            <div class="text-2xl font-black tracking-tight">Gilang</div>
+        </div>
+      </div>
+        </div>
+        <div class="p-5">
+          <div class="mb-3 text-xs text-slate-600">Pertandingan Terakhir</div>
+          <ul class="space-y-2" id="list-${idx}">
+            ${visible.map(m => renderListItem(m)).join('')}
+          </ul>
+          ${hidden.length ? `<button id="toggle-${idx}" class="mt-3 text-xs font-medium text-indigo-600 hover:underline" aria-expanded="false">Show More</button>` : ''}
+          <template id="hidden-${idx}">${hidden.map(m => renderListItem(m)).join('')}</template>
+        </div>
+      `;
+
+            // Toggle Show More/Less
+            if (hidden.length) {
+                const btn = wrap.querySelector(`#toggle-${idx}`);
+                const list = wrap.querySelector(`#list-${idx}`);
+                const tpl = wrap.querySelector(`#hidden-${idx}`);
+                btn.addEventListener('click', () => {
+                    const expanded = btn.getAttribute('aria-expanded') === 'true';
+                    if (!expanded) {
+                        list.insertAdjacentHTML('beforeend', tpl.innerHTML);
+                        btn.textContent = 'Show Less';
+                        btn.setAttribute('aria-expanded', 'true');
+                    } else {
+                        // Hapus item tambahan, sisakan 3
+                        while (list.children.length > 3) list.removeChild(list.lastElementChild);
+                        btn.textContent = 'Show More';
+                        btn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            return wrap;
+        }
+
+        function showEmptyState() {
+            const container = document.getElementById('games-container');
+            container.innerHTML = `<div class="rounded-2xl bg-white p-6 text-sm text-slate-600 ring-1 ring-slate-200">Belum ada data pertandingan. Tambahkan <code class=\"font-mono text-slate-800\">window.MATCHES</code> atau sediakan <code class=\"font-mono text-slate-800\">matches.json</code>.</div>`;
+        }
+
+        (async function init() {
+            const matches = await loadMatches();
+            if (!Array.isArray(matches) || matches.length === 0) return showEmptyState();
+
+            const grouped = groupByGame(matches);
+            const total = tally(matches);
+            document.getElementById('total-aku').textContent = total.Aku ?? 0;
+            document.getElementById('total-dia').textContent = total.Dia ?? 0;
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+            const container = document.getElementById('games-container');
+            container.innerHTML = '';
+            let i = 0;
+            for (const [game, arr] of sortedEntriesByLatest(grouped)) {
+                container.appendChild(renderGameCard(game, arr, i++));
+            }
+        })();
+    </script>
+</body>
+
+</html>
