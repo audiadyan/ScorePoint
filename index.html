@@ -35,7 +35,7 @@
 
                     <div class="w-full flex flex-col md:flex-row justify-between items-center">
                         <div class="text-6xl font-black tracking-tight"><span id="total-dia">0</span></div>
-                        <div class="order-first md:order-last text-4xl font-black tracking-tight text-slate-600">Gilang
+                        <div class="order-first md:order-last text-4xl font-black tracking-tight text-slate-600">Gramm
                         </div>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
 
         <!-- Footer -->
         <footer class="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
-            © 2025 Duel Board Dekils vs Gilang.
+            © 2025 Duel Board Dekils vs Gramm.
         </footer>
     </div>
 
@@ -61,7 +61,7 @@
         // 🔧 Konfigurasi Pemain
         // ======================
         const PLAYER1_NAME = "Dekils";
-        const PLAYER2_NAME = "Gilang";
+        const PLAYER2_NAME = "Gramm";
 
         async function loadMatches() {
             if (Array.isArray(window.MATCHES) && window.MATCHES.length) return window.MATCHES;
@@ -161,7 +161,7 @@
 
       <div class="flex gap-3 items-center">
         <div class="w-full flex justify-between items-center">
-            <div class="text-2xl font-black tracking-tight">Dekils</div>
+            <div class="text-2xl font-black tracking-tight">${PLAYER1_NAME}</div>
             <div class="text-3xl font-black tracking-tight">${t.Aku}</div>
         </div>
 
@@ -169,7 +169,7 @@
 
         <div class="w-full flex justify-between items-center">
             <div class="text-3xl font-black tracking-tight">${t.Dia}</div>
-            <div class="text-2xl font-black tracking-tight">Gilang</div>
+            <div class="text-2xl font-black tracking-tight">${PLAYER2_NAME}</div>
         </div>
       </div>
         </div>
